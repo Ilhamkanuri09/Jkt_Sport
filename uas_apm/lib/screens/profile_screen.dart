@@ -29,7 +29,7 @@ class ProfileScreen extends StatelessWidget {
                 // Navigate to Login Screen when logged out
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
                   (route) => false, // Removes all previous routes
                 );
               },

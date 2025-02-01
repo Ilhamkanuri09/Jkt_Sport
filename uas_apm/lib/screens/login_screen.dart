@@ -1,8 +1,40 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
+import 'package:uas_apm/api_service.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  String? token;
+
+  void login() async {
+    try {
+      final response = await ApiService.login(
+          emailController.text, passwordController.text);
+      setState(() {
+        token = response['token'];
+      });
+      print('Login successful: $token');
+
+      // Navigasi ke Dashboard jika login berhasil
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const DashboardScreen(),
+        ),
+      );
+    } catch (e) {
+      print('Login failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Login gagal, periksa kembali email & password")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +60,8 @@ class LoginScreen extends StatelessWidget {
                   children: [
                     // Logo
                     Container(
-                      height: 400.0,
-                      width: 400.0,
+                      height: 200.0,
+                      width: 200.0,
                       margin: const EdgeInsets.only(bottom: 40.0),
                       decoration: const BoxDecoration(
                         image: DecorationImage(
@@ -38,30 +70,25 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Username Field
+                    // Email Field
                     _buildTextField(
-                      hintText: 'Username',
+                      controller: emailController,
+                      hintText: "Email",
                       obscureText: false,
                     ),
                     const SizedBox(height: 15),
 
                     // Password Field
                     _buildTextField(
-                      hintText: 'Password',
+                      controller: passwordController,
+                      hintText: "Password",
                       obscureText: true,
                     ),
                     const SizedBox(height: 30),
 
                     // Login Button
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const DashboardScreen(),
-                          ),
-                        );
-                      },
+                      onPressed: login,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 100, vertical: 15),
@@ -87,13 +114,15 @@ class LoginScreen extends StatelessWidget {
 
   /// Helper method to build text fields
   Widget _buildTextField({
+    required TextEditingController controller,
     required String hintText,
     required bool obscureText,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
-        hintText: hintText,
+        labelText: hintText,
         filled: true,
         fillColor: Colors.white.withOpacity(0.9),
         border: OutlineInputBorder(
