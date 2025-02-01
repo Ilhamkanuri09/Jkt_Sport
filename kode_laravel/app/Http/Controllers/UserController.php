@@ -1,52 +1,46 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\facades\Auth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
 
 class UserController extends Controller
 {
-    public function index()
+    // Login API
+    public function authenticate(Request $request)
     {
-        return view('login',['title' => 'login']);
-    }
-
-    public function authenticate(Request $request){
-        $credential = $request->validate([
-            'email' => ['required', 'email:dns'],
-            'password' => ['required']
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
         ]);
-        if(Auth::attempt($credential)){
-            $request->session()->regenerate();
-            return redirect()->intended('welcome');
+
+        if (!Auth::attempt($credentials)) {
+            return response()->json(['message' => 'Login failed!'], 401);
         }
-        return back()->with('loginError','login Failed');
+
+        $user = Auth::user();
+        $token = $user->createToken('authToken')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user,
+            'token' => $token
+        ]);
     }
 
-    public function logout(Request $request){
-        Auth::logout();
-        request()->session()->invalidate();
-        return redirect('/login');
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    // Logout API
+    public function logout(Request $request)
     {
-        return view('users.create');
+        $request->user()->tokens()->delete(); // Hapus semua token pengguna
+
+        return response()->json(['message' => 'Logged out successfully']);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
+    // Register API
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -54,13 +48,22 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
         ]);
-    
+
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
             'password' => Hash::make($validatedData['password']),
         ]);
-    
-        return redirect()->route('login')->with('success', 'Pengguna berhasil dibuat!');
+
+        return response()->json([
+            'message' => 'User registered successfully!',
+            'user' => $user
+        ], 201);
+    }
+
+    // Get Authenticated User (Protected API)
+    public function profile(Request $request)
+    {
+        return response()->json($request->user());
     }
 }
